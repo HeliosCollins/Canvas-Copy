@@ -24,10 +24,19 @@ function App() {
     setNodes(n => n.map(node => node.id === id ? { ...node, text } : node));
   };
 
+  const startPanning = (x, y) => {
+    panning.current = true;
+    panStart.current = { x, y };
+  };
+
   const onCanvasMouseDown = e => {
     if (e.target !== canvasRef.current) return;
-    panning.current = true;
-    panStart.current = { x: e.clientX, y: e.clientY };
+    startPanning(e.clientX, e.clientY);
+  };
+
+  const onPanButtonDown = e => {
+    startPanning(e.clientX, e.clientY);
+    e.preventDefault();
   };
 
   const onCanvasMouseMove = e => {
@@ -60,20 +69,20 @@ function App() {
   React.useEffect(() => {
     const el = canvasRef.current;
     if (!el) return;
-    el.addEventListener('mousemove', onCanvasMouseMove);
-    el.addEventListener('mouseup', onCanvasMouseUp);
-    el.addEventListener('mouseleave', onCanvasMouseUp);
+    document.addEventListener('mousemove', onCanvasMouseMove);
+    document.addEventListener('mouseup', onCanvasMouseUp);
+    document.addEventListener('mouseleave', onCanvasMouseUp);
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => {
-      el.removeEventListener('mousemove', onCanvasMouseMove);
-      el.removeEventListener('mouseup', onCanvasMouseUp);
-      el.removeEventListener('mouseleave', onCanvasMouseUp);
+      document.removeEventListener('mousemove', onCanvasMouseMove);
+      document.removeEventListener('mouseup', onCanvasMouseUp);
+      document.removeEventListener('mouseleave', onCanvasMouseUp);
       el.removeEventListener('wheel', onWheel);
     };
   }, []);
 
-  const handleDrag = (id, dx, dy) => {
-    setNodes(nodes => nodes.map(node => node.id === id ? { ...node, x: node.x + dx, y: node.y + dy } : node));
+  const handleDrag = (id, x, y) => {
+    setNodes(nodes => nodes.map(node => node.id === id ? { ...node, x, y } : node));
   };
 
   const canvasStyle = {
@@ -87,6 +96,7 @@ function App() {
         onMouseDown: onCanvasMouseDown
       },
       React.createElement('div', { className: 'toolbar' },
+        React.createElement('button', { className: 'pan-button', onMouseDown: onPanButtonDown }, '\u270B'),
         React.createElement('button', { className: 'add-button', onClick: addNode }, '\u2795')
       ),
       React.createElement('div', { className: 'canvas-inner', style: canvasStyle },
@@ -95,24 +105,20 @@ function App() {
           node,
           onDrag: handleDrag,
           onUpdateText: updateNodeText,
-          scale: transform.scale
+          scale: transform.scale,
+          canvasRef
         }))
       )
     )
   );
 }
 
-function Node({ node, onDrag, onUpdateText, scale }) {
+function Node({ node, onDrag, onUpdateText, scale, canvasRef }) {
   const nodeRef = useRef(null);
-  const posRef = useRef({ x: node.x, y: node.y });
   const dragging = useRef(false);
-  const start = useRef({ x: 0, y: 0 });
+  const offset = useRef({ x: 0, y: 0 });
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(node.text);
-
-  React.useEffect(() => {
-    posRef.current = { x: node.x, y: node.y };
-  }, [node.x, node.y]);
 
   React.useEffect(() => {
     setText(node.text);
@@ -120,18 +126,20 @@ function Node({ node, onDrag, onUpdateText, scale }) {
 
   const onMouseDown = e => {
     dragging.current = true;
-    start.current = { x: e.clientX, y: e.clientY };
+    const rect = nodeRef.current.getBoundingClientRect();
+    offset.current = {
+      x: (e.clientX - rect.left) / scale,
+      y: (e.clientY - rect.top) / scale
+    };
     e.stopPropagation();
   };
 
   const onMouseMove = e => {
     if (!dragging.current) return;
-    const dx = (e.clientX - start.current.x) / scale;
-    const dy = (e.clientY - start.current.y) / scale;
-    start.current = { x: e.clientX, y: e.clientY };
-    posRef.current.x += dx;
-    posRef.current.y += dy;
-    onDrag(node.id, dx, dy);
+    const canvasRect = canvasRef.current.getBoundingClientRect();
+    const x = (e.clientX - canvasRect.left) / scale - offset.current.x;
+    const y = (e.clientY - canvasRect.top) / scale - offset.current.y;
+    onDrag(node.id, x, y);
   };
 
   const onMouseUp = () => {
