@@ -44,11 +44,16 @@ function App() {
 
   const onWheel = e => {
     e.preventDefault();
-    const delta = e.deltaY < 0 ? 0.1 : -0.1;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const offsetX = e.clientX - rect.left;
+    const offsetY = e.clientY - rect.top;
+    const factor = e.deltaY < 0 ? 1.1 : 0.9;
     setTransform(t => {
-      let scale = t.scale + delta;
+      let scale = t.scale * factor;
       scale = Math.min(Math.max(scale, 0.2), 2);
-      return { ...t, scale };
+      const x = offsetX - ((offsetX - t.x) / t.scale) * scale;
+      const y = offsetY - ((offsetY - t.y) / t.scale) * scale;
+      return { x, y, scale };
     });
   };
 
@@ -81,8 +86,10 @@ function App() {
         ref: canvasRef,
         onMouseDown: onCanvasMouseDown
       },
+      React.createElement('div', { className: 'toolbar' },
+        React.createElement('button', { className: 'add-button', onClick: addNode }, '\u2795')
+      ),
       React.createElement('div', { className: 'canvas-inner', style: canvasStyle },
-        React.createElement('button', { className: 'add-button', onClick: addNode }, 'Add Note'),
         nodes.map(node => React.createElement(Node, {
           key: node.id,
           node,
