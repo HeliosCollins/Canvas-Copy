@@ -94,14 +94,15 @@ function App() {
           key: node.id,
           node,
           onDrag: handleDrag,
-          onUpdateText: updateNodeText
+          onUpdateText: updateNodeText,
+          scale: transform.scale
         }))
       )
     )
   );
 }
 
-function Node({ node, onDrag, onUpdateText }) {
+function Node({ node, onDrag, onUpdateText, scale }) {
   const nodeRef = useRef(null);
   const posRef = useRef({ x: node.x, y: node.y });
   const dragging = useRef(false);
@@ -125,8 +126,8 @@ function Node({ node, onDrag, onUpdateText }) {
 
   const onMouseMove = e => {
     if (!dragging.current) return;
-    const dx = e.clientX - start.current.x;
-    const dy = e.clientY - start.current.y;
+    const dx = (e.clientX - start.current.x) / scale;
+    const dy = (e.clientY - start.current.y) / scale;
     start.current = { x: e.clientX, y: e.clientY };
     posRef.current.x += dx;
     posRef.current.y += dy;

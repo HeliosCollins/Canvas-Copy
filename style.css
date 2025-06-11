@@ -51,8 +51,9 @@ body {
 
 .toolbar {
     position: absolute;
-    top: 10px;
-    left: 10px;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .add-button {
