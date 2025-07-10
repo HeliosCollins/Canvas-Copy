@@ -1,1 +1,11 @@
-# Canvas-Copy
+# Canvas React App
+
+This project provides a tiny React-based canvas inspired by the Obsidian Canvas feature. It supports:
+
+- Dark mode
+- Adding, dragging and editing notes that stay locked to the cursor while moving
+- Panning and zooming the canvas
+- Toolbar at the bottom center with a hand button for panning and a plus button for adding notes
+- Zoom centers on the cursor position
+
+To try it out, simply open `index.html` in a browser. No build step is required as React and ReactDOM are loaded from a CDN.
